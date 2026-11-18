@@ -61,9 +61,7 @@ The decision avoidance task was comprised of four scenarios (apartment, car, phy
 
 ### Analysis Plan
 
-Data are processed with the original authors' Study 2 script (Decision_Avoidance_2_Studies_2025 Updated N479.R). 
-
-**Clarify key analysis of interest here**  Here, we aim to examine whether 1. age differences in decision avoidance replicate from the original study, and 2. if the intervention drives differences in peri- and post-decisional affect and / or cognitive load. We examine age, decision avoidance across scenarios (0-4), affect, and cognition. 
+Data are processed with the original authors' Study 2 script (Decision_Avoidance_2_Studies_2025 Updated N479.R). Here, we aim to examine whether 1. age differences in decision avoidance replicate from the original study, and 2. if the intervention drives differences in peri- and post-decisional affect and / or cognitive load. We examine age, decision avoidance across scenarios (0-4), affect, and cognition. 
 
 ### Differences from Original Study
 
