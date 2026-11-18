@@ -1,5 +1,5 @@
 ---
-title: "Replication of 'The relationship between future time perspective and memory control beliefs in older adults' by Sarah Barber and Carla Strickland-Hughes (2019, Research in Human Development)" 
+title: "Replication of 'What Factors are Associated with Age Differences in Intentional Decision Avoidance' by Julia Nolte and Corinna Lockenhoff (2025, Experimental Aging Research)" 
 author: "Kathrine Whitman (kwhitman@stanford.edu)"
 date: "`r format(Sys.time(), '%B %d, %Y')`"
 format:
@@ -14,42 +14,60 @@ format:
 
 ## Introduction
 
-Links to github https://github.com/psych251/barber2019/tree/main
+Links to github https://github.com/psych251/nolte2025
 
-Link to original paper https://github.com/psych251/barber2019/tree/main/original_paper
+Link to original paper https://github.com/psych251/nolte2025/tree/main/original_paper
 
-I chose to examine this study because it bridges key themes in my research: lifespan development, future time perspectives, beliefs about memory and self-efficacy, and implications for cognitive aging. By disentangling three possible components of future time perspective (FTP) (coded in this study as opportunity, extension, and constraint), the study provides a detailed framework for understanding how older adults’ views of their future shape their beliefs about memory control. These findings are interesting in developing a better understanding the role of time horizons in human motivation, as it highlights that not all aspects of FTP influence individual's beliefs equally. Similar to how some subscales of the Ryff Psychological well-being scales map onto age-related changes in well-being, subscales of the FTP scale might apply differently by age. In particular, the strong link between FTP-opportunity and adaptive memory beliefs suggests that motivation and sense of control may be better associated with cognitive outcomes in late-life. 
+I chose to examine this study because it examines a key theme in my research: how does aging affect the processes by which we engage with information in order to make - or avoid - important decisions.  The study provides a variety of setting in which older and younger adults make decisions, including choosing a physician, a health insurance plan, housing, and purchasing a car. Additionally, the authors sought to understand whether affect or cognition might account for age-related differences in decision making and avoidance. Half of the subjects completed a writing intervention task designed to decrease decision-making avoidance. 
 
 ## Methods
-The original study recruited 189 community-dwelling older adults aged 60–85 who completed an online survey. Stimuli consisted of standardized self-report measures: the Carstensen & Lang FTP Scale, divided into the three subscales validated by Rohr et al. (2017); the Adolescent and Adult Time Inventory – Future Attitudes subscales to assess positive and negative future outlooks; the Life Progress Slider (adapted from Cottle’s Future Extension Line) to gauge perceived position in the lifespan; and the Memory Controllability Inventory to assess beliefs about potential improvement, inevitable decline, and effort utility for memory. All responses were collected using Likert-type or slider scales. 
+The original paper consisted of two studies; here, we replicate Study 2 of the paper to examine whether a writing intervention might decrease avoidance. The study recruited 501 participants (448 via Qualrtics, 52 via laboratory participation). The final sample consisted of 479 participants aged 18-96, in which 51% of the sample identified as women and 65% of the sample identified as Non-Hispanic White. 
 
-Survey materials and administration are accessible; however, it should be noted that the participants in this online sample had high education levels, with 12% of participants having an MD or PhD. In our analysis, we will control for education and determine if education levels effect memory control beliefs and future time perspectives. 
+Survey materials and data are accessible via the study's Open Science Framework pre-registration.
+https://osf.io/7wupg/?view_only=1e7ee013faf040088d6665008d3e2aef
 
 ### Power Analysis
 
-The original study recruited N=189 community-dwelling older adults ages 60–85; Replicating that scale is realistic for 80–90% power for the small-medium effects (.27–.30). 
+Here, we aim to recruit approximately 40 particiants per cell (2 age groups (Young Adult - Older Adult) × 2 conditions (Intervention - No intervention); N = 160). This estimates a 96% power for the original control-condition effect (d = 0.85); at a standard 80% power, an effect of d = 0.63 is still detectable. We will test 1. age differences within condition (described above), the main effect of age across both conditions, and the main effect of intervention. Because the interaction would require testing n=620 participants total at 80% power, we wil not be testing for the age*condition interaction. 
 
 ### Planned Sample
 
-Age 60-85, fluent in English, able to complete an online survey independently; differs from original sample by being recruited online via Prolific. 
+Size: 160 participants (40 per cell). Recruiting about 176 to allow for exclusions / drop outs. 
+Ages: Younger adults 18–35 and older adults 66 and older (to match the original's age-group definitions).
+Eligibility: Engligh-speaking U.S. residents, recruited through Prolific 
+Recruitment: Prolific, using two separate study recruitment postings (one for each age group). Condition is assigned randomly within age group by the embedded Qualtrics randomizer. 
+Compensation: Participants are paid $2 for an estimated 13 minute study (the equivalent of 9.23 hourly, below Prolific's recommended 26/hour compensation and above the federal minimum wage of 7.25 per hour.) For both studies (n=80, rate is 2/hr, cost = 213) the total cost is 426 USD. 
 
 ### Materials
 
-Carstensen and Lang (1996) FTP scale, Adolescent and Adult Time Inventory (ATI) – Time Attitude Scale, “Using a measure based upon Cottle’s (1976) Future Extension Line Test, participants used a sliding bar to report how far they had progressed in life.” (1–100 slider labeled beginning to end), Memory Controllability Inventory (MCI) with 20 items, five subscales
+All materials come from the original Study 2 Qualtrics survey ("2023 Decision Avoidance II"), with the unrelated measures removed (see differences from original study section). 
+- Demographics: age, gender, U.S. residence, race/ethnic group, education (5 levels), household income (7 levels); year of birth as an age-consistency check.
+- Baseline affect: valence (1 = Very negative, 7 = Very positive) and arousal (1 = Very quiet/still, 7 = Very activated/aroused).
+- Goals and life position: growth vs. maintenance goals and information vs. affect goals (0–100 sliders, midpoint 50); perceived life position (0 = Birth, 100 = Death).
+- Self-rated health and cognition: physical health, emotional health, learning ability, memory (1 = Poor, 5 = Excellent). 
+- Maximization scale: 6 items, Nenkov et al. (2008).
+- Numeracy: 3 Lipkus et al. (2001) items (0–3 correct), plus a fourth door-prize item used as an attention check (correct answer 1,000).
+- Personality: 10-item Big Five Inventory (Rammstedt & John, 2007).
+- Decision avoidance task: four scenarios (apartment, car, physician, health plan) in random order. Participants choose an option or "Not choose any of these [options] for the time being." Outcome = number avoided, 0–4.
+- Peri-decisional ratings (1–7): difficulty, effort, stress, anticipated regret.
+- Post-decisional ratings (1–7): valence, arousal, satisfaction, regret.
+- Writing intervention (intervention condition only): before rating and choosing, "Please write down what you like and dislike about each option," in a text box beside the option grid.
+
 
 ### Procedure	
 
-Can quote directly from original article - just put the text in quotations and note that this was followed precisely.  Or, quote directly and just point out exceptions to what was described in the original article.
+The procedure is described as follows, in the words of the paper, "The survey assessed participants' demographic background, baseline affect, life goals, perceived life position, self-rated health and cognitive abilities, maximization tendencies, numeracy skills, and personality traits, in that order. Participants then responded to all four decision avoidance tasks in randomized order. The survey ended after participants reported their birth year". 
+The decision avoidance task was comprised of four scenarios (apartment, car, physician, health plan) in random order. Half of the participants are randomly assigned to a writing condition before and after selecting their decision, in which they respond to the prompt "Please write down what you like and dislike about each option" beside the option grid. 
 
 ### Analysis Plan
 
-Can also quote directly, though it is less often spelled out effectively for an analysis strategy section.  The key is to report an analysis strategy that is as close to the original - data cleaning rules, data exclusion rules, covariates, etc. - as possible.  
+Data are processed with the original authors' Study 2 script (Decision_Avoidance_2_Studies_2025 Updated N479.R). 
 
-**Clarify key analysis of interest here**  You can also pre-specify additional analyses you plan to do.
+**Clarify key analysis of interest here**  Here, we aim to examine whether 1. age differences in decision avoidance replicate from the original study, and 2. if the intervention drives differences in peri- and post-decisional affect and / or cognitive load. We examine age, decision avoidance across scenarios (0-4), affect, and cognition. 
 
 ### Differences from Original Study
 
-Explicitly describe known differences in sample, setting, procedure, and analysis plan from original study.  The goal, of course, is to minimize those differences, but differences will inevitably occur.  Also, note whether such differences are anticipated to make a difference based on claims in the original article or subsequent published research on the conditions for obtaining the effect.
+Due to budgeting constraints, we aim to recruit at the ends of the adult lifespan sample (ie, 18-35, and ages 66+) rather than a full lifespan sample including midlife. We chose to do this to see age effects across groups rather than as a continuous correlation. Similarly, due to the high amount of participants needed to analyze the intervention-age interaction in decicion-making avoidance, we aim to examine only the main effects of age and intervention condition on decision avoidance, rather than the interaction. Our sample will be collected entirely online, rather than as a blend of in-person and online data collection. The original study found no differences between online participants and in-lab participants, so we do not expect differences for this reason. Additionally, we ask participants less questions, as the original study included a larger battery of questions used in other studies/analysis. This may result in less fatigue for the participants, which may in turn affect decision avoidance. 
 
 ### Methods Addendum (Post Data Collection)
 
