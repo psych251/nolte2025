@@ -18,6 +18,9 @@ Links to github https://github.com/psych251/nolte2025
 
 Link to original paper https://github.com/psych251/nolte2025/tree/main/original_paper
 
+R-Pub link
+https://rpubs.com/kmwhitman/1477334
+
 I chose to examine this study because it examines a key theme in my research: how does aging affect the processes by which we engage with information in order to make - or avoid - important decisions.  The study provides a variety of setting in which older and younger adults make decisions, including choosing a physician, a health insurance plan, housing, and purchasing a car. Additionally, the authors sought to understand whether affect or cognition might account for age-related differences in decision making and avoidance. Half of the subjects completed a writing intervention task designed to decrease decision-making avoidance. 
 
 ## Methods
