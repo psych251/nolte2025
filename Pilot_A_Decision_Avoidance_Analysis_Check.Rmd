@@ -1,0 +1,749 @@
+---
+title: "Decision Avoidance — Study 2 Replication"
+subtitle: "Analysis/Code Verification on Pilot A Participants"
+author: "Kathrine Whitman"
+date: "`r format(Sys.Date(), '%B %d, %Y')`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+```
+
+This document checks that pilot participants could complete the online survey and that the published Study 2 analysis code (Nolte & Löckenhoff, 2025) runs on the replication Qualtrics export.
+
+```{r packages}
+library(readr)
+library(plyr)       
+library(apaTables)
+library(ggplot2)
+library(readxl)      
+library(patchwork)   # side by side ggplots
+library(knitr)       # tables
+library(kableExtra)  # APA-style table formatting
+options(scipen=999)
+```
+
+# Import the data
+
+```{r import}
+
+#Differences from the original script are marked with #Difference_n
+
+# Difference_0
+#the published script deletes the two extra Qualtrics header rows by hand, deleted here in code 
+
+# To run this whole document on new data (Pilot B, full sample), change csv import
+# File paths are relative to this .Rmd, which sits in the project's main folder,
+# so "data/" is the project's data folder
+data_file         <- "data/Trial_Dec_Avoidance-anon.csv"
+replication_label <- "Replication (Pilot A)"
+
+raw   <- suppressWarnings(read_csv(data_file,
+                                   show_col_types = FALSE, 
+                                   progress = FALSE))
+FIXED <- raw[-c(1, 2), ] # drop label row + ImportId row
+FIXED$ID <- seq_len(nrow(FIXED))
+
+n_raw <- nrow(FIXED)
+```
+
+# Survey completion and attention checks
+
+```{r completion}
+#'Progress' and 'Finished': everyone finished the survey 
+count(FIXED$Progress)
+count(FIXED$Finished)
+
+#'Duration_minutes'
+FIXED$Duration_seconds <- as.numeric(FIXED$`Duration (in seconds)`)
+FIXED$Duration_minutes <- FIXED$Duration_seconds/60
+FIXED$Duration_minutes
+
+#'Consent give' and 'Age': responses for screening
+count(FIXED$`Consent give`)
+FIXED$Age <- as.numeric(FIXED$Age)
+FIXED$Age
+
+# Keep participants who passed screening and were randomized to a condition
+#the scoring below uses the condition recorded in Dec_Group)
+
+FIXED <- subset(FIXED, !is.na(Dec_Group))
+nrow(FIXED)
+count(FIXED$Dec_Group)
+
+#Check attention check 'Health_4' (correct answer: 'Fair')
+count(FIXED$Health_4)
+
+#Check attention check 'LN4' (correct answer: '1000')
+count(FIXED$LN4)
+
+# Intervention participants write about the options before each choice;
+# character counts show they completed the writing task
+data.frame(ID = FIXED$ID, Dec_Group = FIXED$Dec_Group,
+           Apart = nchar(FIXED$Apart_Write_I), Car = nchar(FIXED$Car_Write_I),
+           Phys = nchar(FIXED$Phys_Write_I), Insu = nchar(FIXED$Insu_Write_I))
+```
+
+# Scoring
+
+```{r condition}
+# Difference_1: our replication records condition directly in Dec_Group (Decision_Group)
+FIXED$Group_DC <- as.integer(FIXED$Dec_Group == "Control")
+FIXED$Group_DI <- as.integer(FIXED$Dec_Group == "Intervention")
+```
+
+```{r total avoidance}
+#'Apart_Choice_I_FIXED'
+FIXED$Apart_Choice_I_FIXED <- NA
+FIXED$Apart_Choice_I_FIXED[FIXED$Apart_Choice_I == "Not choose any of these apartments for the time being"] <- 1
+FIXED$Apart_Choice_I_FIXED[FIXED$Apart_Choice_I != "Not choose any of these apartments for the time being"] <- 0
+
+#'Apart_Choice_C_FIXED'
+FIXED$Apart_Choice_C_FIXED <- NA
+FIXED$Apart_Choice_C_FIXED[FIXED$Apart_Choice_C == "Not choose any of these apartments for the time being"] <- 1
+FIXED$Apart_Choice_C_FIXED[FIXED$Apart_Choice_C != "Not choose any of these apartments for the time being"] <- 0
+
+#'Car_Choice_I_FIXED'
+FIXED$Car_Choice_I_FIXED <- NA
+FIXED$Car_Choice_I_FIXED[FIXED$Car_Choice_I == "Not choose any of these cars for the time being"] <- 1
+FIXED$Car_Choice_I_FIXED[FIXED$Car_Choice_I != "Not choose any of these cars for the time being"] <- 0
+
+#'Car_Choice_C_FIXED'
+FIXED$Car_Choice_C_FIXED <- NA
+FIXED$Car_Choice_C_FIXED[FIXED$Car_Choice_C == "Not choose any of these cars for the time being"] <- 1
+FIXED$Car_Choice_C_FIXED[FIXED$Car_Choice_C != "Not choose any of these cars for the time being"] <- 0
+
+#'Phys_Choice_I_FIXED'
+FIXED$Phys_Choice_I_FIXED <- NA
+FIXED$Phys_Choice_I_FIXED[FIXED$Phys_Choice_I == "Not choose any of these doctors for the time being"] <- 1
+FIXED$Phys_Choice_I_FIXED[FIXED$Phys_Choice_I != "Not choose any of these doctors for the time being"] <- 0
+
+#'Phys_Choice_C_FIXED'
+FIXED$Phys_Choice_C_FIXED <- NA
+FIXED$Phys_Choice_C_FIXED[FIXED$Phys_Choice_C == "Not choose any of these doctors for the time being"] <- 1
+FIXED$Phys_Choice_C_FIXED[FIXED$Phys_Choice_C != "Not choose any of these doctors for the time being"] <- 0
+
+#'Insu_Choice_I_FIXED'
+FIXED$Insu_Choice_I_FIXED <- NA
+FIXED$Insu_Choice_I_FIXED[FIXED$Insu_Choice_I == "Not choose any of these health plans for the time being"] <- 1
+FIXED$Insu_Choice_I_FIXED[FIXED$Insu_Choice_I != "Not choose any of these health plans for the time being"] <- 0
+
+#'Insu_Choice_C_FIXED'
+FIXED$Insu_Choice_C_FIXED <- NA
+FIXED$Insu_Choice_C_FIXED[FIXED$Insu_Choice_C == "Not choose any of these health plans for the time being"] <- 1
+FIXED$Insu_Choice_C_FIXED[FIXED$Insu_Choice_C != "Not choose any of these health plans for the time being"] <- 0
+
+#'Choice_FIXED_I'
+FIXED$Choice_FIXED_I <- rowSums(FIXED[,c("Apart_Choice_I_FIXED",
+ "Car_Choice_I_FIXED",
+ "Phys_Choice_I_FIXED",
+ "Insu_Choice_I_FIXED")], na.rm=TRUE)
+FIXED$Choice_FIXED_I[FIXED$Group_DI != 1] <- NA
+
+#'Choice_FIXED_C'
+FIXED$Choice_FIXED_C <- rowSums(FIXED[,c("Apart_Choice_C_FIXED",
+ "Car_Choice_C_FIXED",
+ "Phys_Choice_C_FIXED",
+ "Insu_Choice_C_FIXED")], na.rm=TRUE)
+FIXED$Choice_FIXED_C[FIXED$Group_DC != 1] <- NA
+
+#'Choice_avoided_total' ***
+FIXED$Choice_avoided_total <- NA
+FIXED$Choice_avoided_total[FIXED$Choice_FIXED_C == 1] <- 1
+FIXED$Choice_avoided_total[FIXED$Choice_FIXED_C == 2] <- 2
+FIXED$Choice_avoided_total[FIXED$Choice_FIXED_C == 3] <- 3
+FIXED$Choice_avoided_total[FIXED$Choice_FIXED_C == 4] <- 4
+FIXED$Choice_avoided_total[FIXED$Choice_FIXED_C == 0] <- 0
+FIXED$Choice_avoided_total[FIXED$Choice_FIXED_I == 1] <- 1
+FIXED$Choice_avoided_total[FIXED$Choice_FIXED_I == 2] <- 2
+FIXED$Choice_avoided_total[FIXED$Choice_FIXED_I == 3] <- 3
+FIXED$Choice_avoided_total[FIXED$Choice_FIXED_I == 4] <- 4
+FIXED$Choice_avoided_total[FIXED$Choice_FIXED_I == 0] <- 0
+count(FIXED$Choice_avoided_total)
+```
+
+```{r scenario-avoidance}
+# Avoidance in each scenario, combining the two conditions (needed for Table 2).
+# Copied from the original script: lines 4173-4177 (apartment), and the same
+# code for car (5740), physician (5776) and health plan (5812).
+FIXED$Apart_Choice_avoided_total <- NA
+FIXED$Apart_Choice_avoided_total[FIXED$Apart_Choice_C_FIXED == 0] <- 0
+FIXED$Apart_Choice_avoided_total[FIXED$Apart_Choice_C_FIXED == 1] <- 1
+FIXED$Apart_Choice_avoided_total[FIXED$Apart_Choice_I_FIXED == 0] <- 0
+FIXED$Apart_Choice_avoided_total[FIXED$Apart_Choice_I_FIXED == 1] <- 1
+
+FIXED$Car_Choice_avoided_total <- NA
+FIXED$Car_Choice_avoided_total[FIXED$Car_Choice_C_FIXED == 0] <- 0
+FIXED$Car_Choice_avoided_total[FIXED$Car_Choice_C_FIXED == 1] <- 1
+FIXED$Car_Choice_avoided_total[FIXED$Car_Choice_I_FIXED == 0] <- 0
+FIXED$Car_Choice_avoided_total[FIXED$Car_Choice_I_FIXED == 1] <- 1
+
+FIXED$Phys_Choice_avoided_total <- NA
+FIXED$Phys_Choice_avoided_total[FIXED$Phys_Choice_C_FIXED == 0] <- 0
+FIXED$Phys_Choice_avoided_total[FIXED$Phys_Choice_C_FIXED == 1] <- 1
+FIXED$Phys_Choice_avoided_total[FIXED$Phys_Choice_I_FIXED == 0] <- 0
+FIXED$Phys_Choice_avoided_total[FIXED$Phys_Choice_I_FIXED == 1] <- 1
+
+FIXED$Insu_Choice_avoided_total <- NA
+FIXED$Insu_Choice_avoided_total[FIXED$Insu_Choice_C_FIXED == 0] <- 0
+FIXED$Insu_Choice_avoided_total[FIXED$Insu_Choice_C_FIXED == 1] <- 1
+FIXED$Insu_Choice_avoided_total[FIXED$Insu_Choice_I_FIXED == 0] <- 0
+FIXED$Insu_Choice_avoided_total[FIXED$Insu_Choice_I_FIXED == 1] <- 1
+```
+
+```{r peri}
+# Take each item from the condition the participant was assigned to; parse_number()
+# turns the response labels ("1  Strongly disagree" ... "7  Strongly agree") into 1-7
+FIXED$Apart_Peri_Difficult_Total <- parse_number(ifelse(FIXED$Group_DC == 1, FIXED$Apart_Pe_Difficult_C_1, FIXED$Apart_Pe_Difficult_I_1))
+FIXED$Car_Peri_Difficult_Total   <- parse_number(ifelse(FIXED$Group_DC == 1, FIXED$Car_Pe_Difficult_C_1,   FIXED$Car_Pe_Difficult_I_1))
+FIXED$Phys_Peri_Difficult_Total  <- parse_number(ifelse(FIXED$Group_DC == 1, FIXED$Phys_Pe_Difficult_C_1,  FIXED$Phys_Pe_Difficult_I_1))
+FIXED$Insu_Peri_Difficult_Total  <- parse_number(ifelse(FIXED$Group_DC == 1, FIXED$Insu_Pe_Difficult_C_1,  FIXED$Insu_Pe_Difficult_I_1))
+
+FIXED$Apart_Peri_Effort_Total <- parse_number(ifelse(FIXED$Group_DC == 1, FIXED$Apart_Pe_Effort_C_1, FIXED$Apart_Pe_Effort_I_1))
+FIXED$Car_Peri_Effort_Total   <- parse_number(ifelse(FIXED$Group_DC == 1, FIXED$Car_Pe_Effort_C_1,   FIXED$Car_Pe_Effort_I_1))
+FIXED$Phys_Peri_Effort_Total  <- parse_number(ifelse(FIXED$Group_DC == 1, FIXED$Phys_Pe_Effort_C_1,  FIXED$Phys_Pe_Effort_I_1))
+FIXED$Insu_Peri_Effort_Total  <- parse_number(ifelse(FIXED$Group_DC == 1, FIXED$Insu_Pe_Effort_C_1,  FIXED$Insu_Pe_Effort_I_1))
+
+FIXED$Apart_Peri_Stress_Total <- parse_number(ifelse(FIXED$Group_DC == 1, FIXED$Apart_Pe_Stress_C_1, FIXED$Apart_Pe_Stress_I_1))
+FIXED$Car_Peri_Stress_Total   <- parse_number(ifelse(FIXED$Group_DC == 1, FIXED$Car_Pe_Stress_C_1,   FIXED$Car_Pe_Stress_I_1))
+FIXED$Phys_Peri_Stress_Total  <- parse_number(ifelse(FIXED$Group_DC == 1, FIXED$Phys_Pe_Stress_C_1,  FIXED$Phys_Pe_Stress_I_1))
+FIXED$Insu_Peri_Stress_Total  <- parse_number(ifelse(FIXED$Group_DC == 1, FIXED$Insu_Pe_Stress_C_1,  FIXED$Insu_Pe_Stress_I_1))
+
+FIXED$Apart_Peri_Anti_Reg_Total <- parse_number(ifelse(FIXED$Group_DC == 1, FIXED$Apart_Pe_Anti_Reg_C_1,  FIXED$Apart_Pe_Anti_Reg_I_1))
+FIXED$Car_Peri_Anti_Reg_Total   <- parse_number(ifelse(FIXED$Group_DC == 1, FIXED$Car_Pe_Anti_Regret_C_1, FIXED$Car_Pe_Anti_Regret_I_1))
+FIXED$Phys_Peri_Anti_Reg_Total  <- parse_number(ifelse(FIXED$Group_DC == 1, FIXED$Phys_Pe_Anti_Reg_C_1,   FIXED$Phys_Pe_Anti_Reg_I_1))
+# PATCH 2: this item is exported as Insu_Pe_Regret_I_1 in the new survey (Q641_1 in the original)
+FIXED$Insu_Peri_Anti_Reg_Total  <- parse_number(ifelse(FIXED$Group_DC == 1, FIXED$Insu_Pe_Anti_Reg_C_1,   FIXED$Insu_Pe_Regret_I_1))
+
+#'Peri_Cognition'
+FIXED$Peri_Cognition <- rowMeans(FIXED[,c("Apart_Peri_Difficult_Total",
+"Car_Peri_Difficult_Total",
+"Phys_Peri_Difficult_Total",
+"Insu_Peri_Difficult_Total",
+"Apart_Peri_Effort_Total",
+"Car_Peri_Effort_Total",
+"Phys_Peri_Effort_Total",
+"Insu_Peri_Effort_Total")], na.rm=TRUE)
+
+#'Peri_Affect'
+FIXED$Peri_Affect <- rowMeans(FIXED[,c("Apart_Peri_Stress_Total",
+ "Car_Peri_Stress_Total",
+ "Phys_Peri_Stress_Total",
+ "Insu_Peri_Stress_Total",
+ "Apart_Peri_Anti_Reg_Total",
+ "Car_Peri_Anti_Reg_Total",
+ "Phys_Peri_Anti_Reg_Total",
+ "Insu_Peri_Anti_Reg_Total")], na.rm=TRUE)
+
+#'Peri_Affect_rev'***
+FIXED$Peri_Affect_rev <- 8-FIXED$Peri_Affect
+```
+
+# Descriptives and correlations
+
+```{r apa-table}
+corr_table <- apa.cor.table(as.data.frame(FIXED[, c("Age", "Choice_avoided_total", "Peri_Cognition", "Peri_Affect_rev")]))
+print(corr_table)
+```
+
+# Full Sample and Pilot A participant comparison 
+
+In the orginal author's code, each test is run on the full sample and again on control participants; here, because we only had two pilot participants in the control condition, we run only the full-sample version. Also, because none of our pilot participants avoided a decision, tests involving decision avoidance return NA.
+
+```{r hypotheses}
+#H1: In the control condition, age is associated with higher decision avoidance.
+cor.test(FIXED$Choice_avoided_total, FIXED$Age, method="spearman")
+
+#H2a: In the control condition, more negative peri-decisional affect and higher peri-decisional cognitive load are associated with higher decision avoidance.
+cor.test(FIXED$Choice_avoided_total, FIXED$Peri_Cognition, method="spearman")
+cor.test(FIXED$Choice_avoided_total, FIXED$Peri_Affect_rev, method="spearman")
+
+#H2b: In the control condition, age is associated with more negative peri-decisional affect and higher peri-decisional cognitive load.
+cor.test(FIXED$Age, FIXED$Peri_Cognition, method="spearman")
+cor.test(FIXED$Age, FIXED$Peri_Affect_rev, method="spearman")
+
+#H6a: Participants in the intervention condition report more positive peri-decisional affect and lower peri-decisional cognitive load.
+FIXED$Dec_Group_numeric <- NA
+FIXED$Dec_Group_numeric[FIXED$Dec_Group == "Control"] <- 0
+FIXED$Dec_Group_numeric[FIXED$Dec_Group == "Intervention"] <- 1
+count(FIXED$Dec_Group_numeric)
+cor.test(FIXED$Peri_Cognition, FIXED$Dec_Group_numeric, method="pearson")
+
+cor.test(FIXED$Peri_Affect_rev, FIXED$Dec_Group_numeric, method="pearson")
+```
+
+# Plot
+
+```{r plot}
+ggplot(FIXED, aes(x = Dec_Group, y = Peri_Cognition)) +
+  geom_point(size = 3) +
+  ylim(1, 7) +
+  labs(x = "Condition", y = "Peri-decisional cognitive load (1-7)") +
+  theme_classic()
+```
+
+# Original data (Nolte & Löckenhoff, 2025)
+
+To compare our results with the original study, we load the authors' cleaned Study 2 data, show the exclusions they made, and runs their scoring. 
+However, some script choices needed to be changed, because of differences between the corrected data file and the analysis code being published on an earlier datafile. Each time the code follows the original script, a comment gives the line number in `Decision_Avoidance_2_Studies_2025 Updated N479.R` (from the authors' OSF page) and explains why the authors made that decision.
+
+## Import
+
+```{r orig-import}
+# The authors' cleaned Study 2 data, from OSF ("Corrected Study 2 Data and Code"
+# folder, https://osf.io/7wupg/). Their exclusions are already applied (N = 479),
+# and the file holds both the raw answers and the authors' own scores.
+# The original script calls this data FIXED. We call it ORIG instead, so it does
+# not overwrite our replication data, which is already called FIXED.
+
+ORIG <- read_excel("data/Corrected_Coded_Study2 Decision Avoidance_Oct 2025_N479_Anonymized.xlsx")
+
+nrow(ORIG)   # 479, the published Study 2 sample size
+```
+
+## Exclusions (original script, shown but not run)
+
+The paper reports 501 participants, 22 of whom were excluded, leaving N = 479. The authors' file loaded above already has these exclusions applied, so the code below is **shown for reference but not run** (`eval = FALSE`). It is copied exactly from the original script, which removes people by deleting rows by **row number**, not by a rule. Those row numbers refer to the authors' 507-row file from before the exclusions (`Avoided_Study_2_OnlyRelevant.xlsx` on OSF), and they only work with the steps run in this order, because each deletion moves the rows below it up. On any other file they would remove the wrong people, which is why our replication data are screened by rule instead (see *Survey completion and attention checks* above). The original's checks of Progress, Finished, consent and US residence removed nobody, so they are not shown.
+
+```{r orig-exclusions, eval = FALSE}
+# Original line 58: give every row a running ID (the 507-row file)
+ORIG$ID <- 1:507
+
+# Step 1. Very long completion times (original lines 72-90)
+# Durations over 100 minutes were flagged (29 rows). The script removes the 16
+# online participants among them. The other 13 are in-lab participants
+# (rows 455-507): their survey was started ahead of time, so their recorded
+# duration is too long ("do not exclude in-lab participants", line 86).
+ORIG$Duration_seconds <- as.numeric(ORIG$`Duration (in seconds)`)
+ORIG$Duration_minutes <- ORIG$Duration_seconds/60
+which(ORIG$Duration_minutes > 100)
+ORIG <- ORIG[-c(145, 147, 151, 160, 187, 207, 217, 327, 330, 338, 383, 402, 412, 413, 417, 421),]
+nrow(ORIG)
+
+# Step 2. Reported age does not match year of birth (original lines 97-131)
+# Age_match_2 = (2023 - year of birth) - reported age. Six people were off by
+# 2 or more years (rows 21, 157, 210, 414, 427 and 450 at this point).
+# The authors kept two of them (lines 126-127): row 21 was tested in late 2022,
+# so the real gap is only 1 year, and row 450's age group was confirmed in person.
+# The other four are removed.
+ORIG$Age <- as.numeric(ORIG$Age)
+ORIG$YOB <- as.numeric(ORIG$Year_of_birth)
+ORIG$Age_match_1 <- (2023 - ORIG$YOB)
+ORIG$Age_match_2 <- ORIG$Age_match_1 - ORIG$Age
+which(ORIG$Age_match_2 > 1)
+ORIG <- ORIG[-c(157, 210, 414, 427),]
+nrow(ORIG)
+
+# Step 3. Failed attention check Health_4 (original lines 138-143)
+# The correct answer was "Fair". One person answered "Good" (row 421 at this
+# point) and is removed.
+count(ORIG$Health_4)
+which(ORIG$Health_4 == "Good")
+ORIG <- ORIG[-c(421),]
+nrow(ORIG)
+
+# Step 4. Failed attention check LN4 (original lines 145-151)
+# The correct answer was 1,000. One person answered "100" (row 452 at this
+# point) and is removed. (The comment in the original script says everyone
+# passed, but its code removes this person, and that removal is needed to
+# reach the published N = 479.)
+count(ORIG$LN4)
+which(ORIG$LN4 == "100")
+ORIG <- ORIG[-c(452),]
+nrow(ORIG)
+
+# Step 5. Remove the authors' test runs (original lines 197-199)
+# Rows 1-6 were started on 10-12 December 2022, before data collection began
+# on 15 December 2022. They are test runs, not participants, which is why the
+# paper reports 501 participants (507 - 6) rather than 507.
+ORIG <- ORIG[-c(1,2,3,4,5,6),]
+
+# 501 participants - 22 exclusions = 479, the published Study 2 sample size
+nrow(ORIG)
+```
+
+## Scoring (following the original script)
+
+The authors' file already contains their scores. Running the scoring code on their raw answers, and checking the result against their scores (end of the chunk), shows that the code reproduces the original analysis.
+
+```{r orig-scoring}
+# Keep the authors' own scores, so we can check ours against them at the end
+authors_Dec_Group            <- ORIG$Dec_Group
+authors_Choice_avoided_total <- ORIG$Choice_avoided_total
+authors_Peri_Cognition       <- ORIG$Peri_Cognition
+authors_Peri_Affect_rev      <- ORIG$Peri_Affect_rev
+
+# Condition (original lines 158-182)
+# The original survey stored age group and condition together in new_group,
+# e.g., "Old-DC-Gist" = older adult, control condition. The Verbatim/Gist part
+# is not used in this analysis.
+# Note: for middle-aged participants the script codes "DC" labels as the
+# intervention and "DI" labels as control, the reverse of the other two age
+# groups. We copy it as written, because that is what reproduces the published
+# split of 255 control and 224 intervention participants.
+ORIG$Group_DI <- 0
+ORIG$Group_DI[ORIG$new_group == "Middle-DC-Verbatim"] <- 1
+ORIG$Group_DI[ORIG$new_group == "Young-DI-Verbatim"] <- 1
+ORIG$Group_DI[ORIG$new_group == "Old-DI-Verbatim"] <- 1
+ORIG$Group_DI[ORIG$new_group == "Middle-DC-Gist"] <- 1
+ORIG$Group_DI[ORIG$new_group == "Young-DI-Gist"] <- 1
+ORIG$Group_DI[ORIG$new_group == "Old-DI-Gist"] <- 1
+
+ORIG$Group_DC <- 0
+ORIG$Group_DC[ORIG$new_group == "Middle-DI-Verbatim"] <- 1
+ORIG$Group_DC[ORIG$new_group == "Young-DC-Verbatim"] <- 1
+ORIG$Group_DC[ORIG$new_group == "Old-DC-Verbatim"] <- 1
+ORIG$Group_DC[ORIG$new_group == "Middle-DI-Gist"] <- 1
+ORIG$Group_DC[ORIG$new_group == "Young-DC-Gist"] <- 1
+ORIG$Group_DC[ORIG$new_group == "Old-DC-Gist"] <- 1
+
+ORIG$Dec_Group <- NA
+ORIG$Dec_Group[ORIG$Group_DC == 1] <- "Control"
+ORIG$Dec_Group[ORIG$Group_DI == 1] <- "Intervention"
+count(ORIG$Dec_Group)
+
+# Age groups (original lines 229-233)
+ORIG$Age_group <- NA
+ORIG$Age_group[ORIG$Age <= 35] <- "1 Younger"
+ORIG$Age_group[ORIG$Age > 35 & ORIG$Age < 66] <- "2 Middle"
+ORIG$Age_group[ORIG$Age > 65] <- "3 Older"
+count(ORIG$Age_group)
+
+# Decisions avoided in each scenario (original lines 4151-4177, 5718-5812)
+# 1 = chose "Not choose any of these ... for the time being", 0 = chose an option.
+# Same code as our replication scoring above.
+ORIG$Apart_Choice_I_FIXED <- NA
+ORIG$Apart_Choice_I_FIXED[ORIG$Apart_Choice_I == "Not choose any of these apartments for the time being"] <- 1
+ORIG$Apart_Choice_I_FIXED[ORIG$Apart_Choice_I != "Not choose any of these apartments for the time being"] <- 0
+ORIG$Apart_Choice_C_FIXED <- NA
+ORIG$Apart_Choice_C_FIXED[ORIG$Apart_Choice_C == "Not choose any of these apartments for the time being"] <- 1
+ORIG$Apart_Choice_C_FIXED[ORIG$Apart_Choice_C != "Not choose any of these apartments for the time being"] <- 0
+
+ORIG$Car_Choice_I_FIXED <- NA
+ORIG$Car_Choice_I_FIXED[ORIG$Car_Choice_I == "Not choose any of these cars for the time being"] <- 1
+ORIG$Car_Choice_I_FIXED[ORIG$Car_Choice_I != "Not choose any of these cars for the time being"] <- 0
+ORIG$Car_Choice_C_FIXED <- NA
+ORIG$Car_Choice_C_FIXED[ORIG$Car_Choice_C == "Not choose any of these cars for the time being"] <- 1
+ORIG$Car_Choice_C_FIXED[ORIG$Car_Choice_C != "Not choose any of these cars for the time being"] <- 0
+
+ORIG$Phys_Choice_I_FIXED <- NA
+ORIG$Phys_Choice_I_FIXED[ORIG$Phys_Choice_I == "Not choose any of these doctors for the time being"] <- 1
+ORIG$Phys_Choice_I_FIXED[ORIG$Phys_Choice_I != "Not choose any of these doctors for the time being"] <- 0
+ORIG$Phys_Choice_C_FIXED <- NA
+ORIG$Phys_Choice_C_FIXED[ORIG$Phys_Choice_C == "Not choose any of these doctors for the time being"] <- 1
+ORIG$Phys_Choice_C_FIXED[ORIG$Phys_Choice_C != "Not choose any of these doctors for the time being"] <- 0
+
+ORIG$Insu_Choice_I_FIXED <- NA
+ORIG$Insu_Choice_I_FIXED[ORIG$Insu_Choice_I == "Not choose any of these health plans for the time being"] <- 1
+ORIG$Insu_Choice_I_FIXED[ORIG$Insu_Choice_I != "Not choose any of these health plans for the time being"] <- 0
+ORIG$Insu_Choice_C_FIXED <- NA
+ORIG$Insu_Choice_C_FIXED[ORIG$Insu_Choice_C == "Not choose any of these health plans for the time being"] <- 1
+ORIG$Insu_Choice_C_FIXED[ORIG$Insu_Choice_C != "Not choose any of these health plans for the time being"] <- 0
+
+# Combine the two conditions into one column per scenario (original lines 4173-4177 etc.)
+ORIG$Apart_Choice_avoided_total <- NA
+ORIG$Apart_Choice_avoided_total[ORIG$Apart_Choice_C_FIXED == 0] <- 0
+ORIG$Apart_Choice_avoided_total[ORIG$Apart_Choice_C_FIXED == 1] <- 1
+ORIG$Apart_Choice_avoided_total[ORIG$Apart_Choice_I_FIXED == 0] <- 0
+ORIG$Apart_Choice_avoided_total[ORIG$Apart_Choice_I_FIXED == 1] <- 1
+
+ORIG$Car_Choice_avoided_total <- NA
+ORIG$Car_Choice_avoided_total[ORIG$Car_Choice_C_FIXED == 0] <- 0
+ORIG$Car_Choice_avoided_total[ORIG$Car_Choice_C_FIXED == 1] <- 1
+ORIG$Car_Choice_avoided_total[ORIG$Car_Choice_I_FIXED == 0] <- 0
+ORIG$Car_Choice_avoided_total[ORIG$Car_Choice_I_FIXED == 1] <- 1
+
+ORIG$Phys_Choice_avoided_total <- NA
+ORIG$Phys_Choice_avoided_total[ORIG$Phys_Choice_C_FIXED == 0] <- 0
+ORIG$Phys_Choice_avoided_total[ORIG$Phys_Choice_C_FIXED == 1] <- 1
+ORIG$Phys_Choice_avoided_total[ORIG$Phys_Choice_I_FIXED == 0] <- 0
+ORIG$Phys_Choice_avoided_total[ORIG$Phys_Choice_I_FIXED == 1] <- 1
+
+ORIG$Insu_Choice_avoided_total <- NA
+ORIG$Insu_Choice_avoided_total[ORIG$Insu_Choice_C_FIXED == 0] <- 0
+ORIG$Insu_Choice_avoided_total[ORIG$Insu_Choice_C_FIXED == 1] <- 1
+ORIG$Insu_Choice_avoided_total[ORIG$Insu_Choice_I_FIXED == 0] <- 0
+ORIG$Insu_Choice_avoided_total[ORIG$Insu_Choice_I_FIXED == 1] <- 1
+
+# Total decisions avoided, 0-4 (original lines 5822-5852)
+ORIG$Choice_FIXED_I <- rowSums(ORIG[,c("Apart_Choice_I_FIXED",
+ "Car_Choice_I_FIXED",
+ "Phys_Choice_I_FIXED",
+ "Insu_Choice_I_FIXED")], na.rm=TRUE)
+ORIG$Choice_FIXED_I[ORIG$Group_DI != 1] <- NA
+
+ORIG$Choice_FIXED_C <- rowSums(ORIG[,c("Apart_Choice_C_FIXED",
+ "Car_Choice_C_FIXED",
+ "Phys_Choice_C_FIXED",
+ "Insu_Choice_C_FIXED")], na.rm=TRUE)
+ORIG$Choice_FIXED_C[ORIG$Group_DC != 1] <- NA
+
+ORIG$Choice_avoided_total <- NA
+ORIG$Choice_avoided_total[ORIG$Choice_FIXED_C == 1] <- 1
+ORIG$Choice_avoided_total[ORIG$Choice_FIXED_C == 2] <- 2
+ORIG$Choice_avoided_total[ORIG$Choice_FIXED_C == 3] <- 3
+ORIG$Choice_avoided_total[ORIG$Choice_FIXED_C == 4] <- 4
+ORIG$Choice_avoided_total[ORIG$Choice_FIXED_C == 0] <- 0
+ORIG$Choice_avoided_total[ORIG$Choice_FIXED_I == 1] <- 1
+ORIG$Choice_avoided_total[ORIG$Choice_FIXED_I == 2] <- 2
+ORIG$Choice_avoided_total[ORIG$Choice_FIXED_I == 3] <- 3
+ORIG$Choice_avoided_total[ORIG$Choice_FIXED_I == 4] <- 4
+ORIG$Choice_avoided_total[ORIG$Choice_FIXED_I == 0] <- 0
+count(ORIG$Choice_avoided_total)
+
+# Peri-decisional cognitive load and affect (original lines 2149-4110)
+# The original turns each answer label ("1  Strongly disagree" ... "7  Strongly
+# agree") into a number with 8 lines of code per item. parse_number() does the
+# same in one line, exactly as in our replication scoring above (the check at
+# the end of this chunk confirms the results are identical).
+ORIG$Apart_Peri_Difficult_Total <- parse_number(ifelse(ORIG$Group_DC == 1, ORIG$Apart_Pe_Difficult_C_1, ORIG$Apart_Pe_Difficult_I_1))
+ORIG$Car_Peri_Difficult_Total   <- parse_number(ifelse(ORIG$Group_DC == 1, ORIG$Car_Pe_Difficult_C_1,   ORIG$Car_Pe_Difficult_I_1))
+ORIG$Phys_Peri_Difficult_Total  <- parse_number(ifelse(ORIG$Group_DC == 1, ORIG$Phys_Pe_Difficult_C_1,  ORIG$Phys_Pe_Difficult_I_1))
+ORIG$Insu_Peri_Difficult_Total  <- parse_number(ifelse(ORIG$Group_DC == 1, ORIG$Insu_Pe_Difficult_C_1,  ORIG$Insu_Pe_Difficult_I_1))
+
+ORIG$Apart_Peri_Effort_Total <- parse_number(ifelse(ORIG$Group_DC == 1, ORIG$Apart_Pe_Effort_C_1, ORIG$Apart_Pe_Effort_I_1))
+ORIG$Car_Peri_Effort_Total   <- parse_number(ifelse(ORIG$Group_DC == 1, ORIG$Car_Pe_Effort_C_1,   ORIG$Car_Pe_Effort_I_1))
+ORIG$Phys_Peri_Effort_Total  <- parse_number(ifelse(ORIG$Group_DC == 1, ORIG$Phys_Pe_Effort_C_1,  ORIG$Phys_Pe_Effort_I_1))
+ORIG$Insu_Peri_Effort_Total  <- parse_number(ifelse(ORIG$Group_DC == 1, ORIG$Insu_Pe_Effort_C_1,  ORIG$Insu_Pe_Effort_I_1))
+
+ORIG$Apart_Peri_Stress_Total <- parse_number(ifelse(ORIG$Group_DC == 1, ORIG$Apart_Pe_Stress_C_1, ORIG$Apart_Pe_Stress_I_1))
+ORIG$Car_Peri_Stress_Total   <- parse_number(ifelse(ORIG$Group_DC == 1, ORIG$Car_Pe_Stress_C_1,   ORIG$Car_Pe_Stress_I_1))
+ORIG$Phys_Peri_Stress_Total  <- parse_number(ifelse(ORIG$Group_DC == 1, ORIG$Phys_Pe_Stress_C_1,  ORIG$Phys_Pe_Stress_I_1))
+ORIG$Insu_Peri_Stress_Total  <- parse_number(ifelse(ORIG$Group_DC == 1, ORIG$Insu_Pe_Stress_C_1,  ORIG$Insu_Pe_Stress_I_1))
+
+ORIG$Apart_Peri_Anti_Reg_Total <- parse_number(ifelse(ORIG$Group_DC == 1, ORIG$Apart_Pe_Anti_Reg_C_1,  ORIG$Apart_Pe_Anti_Reg_I_1))
+ORIG$Car_Peri_Anti_Reg_Total   <- parse_number(ifelse(ORIG$Group_DC == 1, ORIG$Car_Pe_Anti_Regret_C_1, ORIG$Car_Pe_Anti_Regret_I_1))
+ORIG$Phys_Peri_Anti_Reg_Total  <- parse_number(ifelse(ORIG$Group_DC == 1, ORIG$Phys_Pe_Anti_Reg_C_1,   ORIG$Phys_Pe_Anti_Reg_I_1))
+# In the original survey the intervention version of this item is called Q641_1
+# (in our survey: Insu_Pe_Regret_I_1)
+ORIG$Insu_Peri_Anti_Reg_Total  <- parse_number(ifelse(ORIG$Group_DC == 1, ORIG$Insu_Pe_Anti_Reg_C_1,   ORIG$Q641_1))
+
+# 'Peri_Cognition' (original line 3084)
+ORIG$Peri_Cognition <- rowMeans(ORIG[,c("Apart_Peri_Difficult_Total",
+"Car_Peri_Difficult_Total",
+"Phys_Peri_Difficult_Total",
+"Insu_Peri_Difficult_Total",
+"Apart_Peri_Effort_Total",
+"Car_Peri_Effort_Total",
+"Phys_Peri_Effort_Total",
+"Insu_Peri_Effort_Total")], na.rm=TRUE)
+
+# 'Peri_Affect' and 'Peri_Affect_rev' (original lines 4099-4110)
+ORIG$Peri_Affect <- rowMeans(ORIG[,c("Apart_Peri_Stress_Total",
+ "Car_Peri_Stress_Total",
+ "Phys_Peri_Stress_Total",
+ "Insu_Peri_Stress_Total",
+ "Apart_Peri_Anti_Reg_Total",
+ "Car_Peri_Anti_Reg_Total",
+ "Phys_Peri_Anti_Reg_Total",
+ "Insu_Peri_Anti_Reg_Total")], na.rm=TRUE)
+ORIG$Peri_Affect_rev <- 8-ORIG$Peri_Affect
+
+# Check: TRUE means our code reproduces the authors' own scores exactly
+all.equal(ORIG$Dec_Group, authors_Dec_Group)
+all.equal(ORIG$Choice_avoided_total, authors_Choice_avoided_total)
+all.equal(ORIG$Peri_Cognition, authors_Peri_Cognition)
+all.equal(ORIG$Peri_Affect_rev, authors_Peri_Affect_rev)
+```
+
+# Side-by-side comparison
+
+## H1: age and decision avoidance
+
+H1 predicts that, in the control condition, older adults avoid more decisions. In the published study this held across all 255 control participants (Spearman *r* = .34). Our replication recruits only younger (18-35) and older (66+) adults, so both panels below keep only control participants from those two age groups. This does not look sensible with pilot A data because we had so few participants, but this code will allow us to quickly check pilot b participants. 
+
+```{r h1-side-by-side, fig.width = 9, fig.height = 4.5}
+# ---- Original data: control condition, younger and older adults only ----
+orig_h1 <- subset(ORIG, Dec_Group == "Control" & Age_group != "2 Middle")
+orig_h1$Age_group <- factor(orig_h1$Age_group,
+                            levels = c("1 Younger", "3 Older"),
+                            labels = c("Younger (18-35)", "Older (66+)"))
+orig_rs <- cor(orig_h1$Age, orig_h1$Choice_avoided_total, method = "spearman")
+
+# ---- Replication data: the same selection ----
+# Same age groups as the original script (lines 229-233)
+FIXED$Age_group <- NA
+FIXED$Age_group[FIXED$Age <= 35] <- "1 Younger"
+FIXED$Age_group[FIXED$Age > 35 & FIXED$Age < 66] <- "2 Middle"
+FIXED$Age_group[FIXED$Age > 65] <- "3 Older"
+
+rep_h1 <- subset(FIXED, Dec_Group == "Control" & Age_group != "2 Middle")
+rep_h1$Age_group <- factor(rep_h1$Age_group,
+                           levels = c("1 Younger", "3 Older"),
+                           labels = c("Younger (18-35)", "Older (66+)"))
+rep_rs <- cor(rep_h1$Age, rep_h1$Choice_avoided_total, method = "spearman")
+
+# ---- Subtitles: sample size and Spearman correlation with age ----
+# (the correlation cannot be computed while nobody has avoided a decision)
+orig_subtitle <- paste0("Control condition, n = ", nrow(orig_h1),
+                        "\nSpearman r = ", sprintf("%.2f", orig_rs))
+rep_subtitle  <- paste0("Control condition, n = ", nrow(rep_h1),
+                        "\nSpearman r = ",
+                        ifelse(is.na(rep_rs), "not computable yet", sprintf("%.2f", rep_rs)))
+
+# ---- Left panel: original ----
+plot_original <- ggplot(orig_h1, aes(x = Age_group, y = Choice_avoided_total, fill = Age_group)) +
+  stat_summary(fun = mean, geom = "bar", width = 0.6) +
+  geom_point(position = position_jitter(width = 0.15, height = 0, seed = 251),
+             size = 1.5, alpha = 0.35, colour = "grey20") +
+  stat_summary(fun.data = mean_se, geom = "errorbar", width = 0.15, linewidth = 0.5) +
+  scale_fill_manual(values = c("Younger (18-35)" = "#2a78d6", "Older (66+)" = "#eb6834"),
+                    drop = FALSE) +
+  scale_x_discrete(drop = FALSE) +
+  scale_y_continuous(breaks = 0:4) +
+  coord_cartesian(ylim = c(0, 4)) +
+  labs(title = "Original (Nolte & Löckenhoff, 2025)", subtitle = orig_subtitle,
+       x = NULL, y = "Decisions avoided (out of 4)") +
+  theme_classic(base_size = 12) +
+  theme(legend.position = "none")
+
+# ---- Right panel: replication (identical code, different data) ----
+plot_replication <- ggplot(rep_h1, aes(x = Age_group, y = Choice_avoided_total, fill = Age_group)) +
+  stat_summary(fun = mean, geom = "bar", width = 0.6) +
+  geom_point(position = position_jitter(width = 0.15, height = 0, seed = 251),
+             size = 1.5, alpha = 0.35, colour = "grey20") +
+  stat_summary(fun.data = mean_se, geom = "errorbar", width = 0.15, linewidth = 0.5) +
+  scale_fill_manual(values = c("Younger (18-35)" = "#2a78d6", "Older (66+)" = "#eb6834"),
+                    drop = FALSE) +
+  scale_x_discrete(drop = FALSE) +
+  scale_y_continuous(breaks = 0:4) +
+  coord_cartesian(ylim = c(0, 4)) +
+  labs(title = replication_label, subtitle = rep_subtitle,
+       x = NULL, y = "Decisions avoided (out of 4)") +
+  theme_classic(base_size = 12) +
+  theme(legend.position = "none")
+
+# ---- Side by side ----
+plot_original + plot_replication +
+  plot_annotation(caption = "Bars show the mean number of decisions avoided, error bars show ±1 SE, and dots are individual participants.")
+```
+
+## Table 2, recreated
+
+The table below recreates the Study 2 columns of the published Table 2 (decision avoidance and the two peri-decisional indices), with the replication data alongside. The *Original* columns reproduce the published values. The post-decisional rows of the published table are not included because this document does not score post-decisional affect.
+
+```{r table2-side-by-side}
+# r = Spearman correlation with age. For the four yes/no avoidance rows it is a
+# point-biserial (Pearson) correlation with age, as in the original (e.g., line 4180).
+# Significance stars are left out (with pilot data most p-values cannot be computed).
+
+# ---- The four samples ----
+orig_ctrl <- subset(ORIG, Dec_Group == "Control")
+rep_ctrl  <- subset(FIXED, Dec_Group == "Control")
+
+# ---- Original, full sample ----
+orig_full_M <- c(
+  sprintf("%.2f (%.2f)", mean(ORIG$Choice_avoided_total, na.rm = TRUE), sd(ORIG$Choice_avoided_total, na.rm = TRUE)),
+  sprintf("%d (%.2f%%)", sum(ORIG$Car_Choice_avoided_total, na.rm = TRUE), 100 * mean(ORIG$Car_Choice_avoided_total, na.rm = TRUE)),
+  sprintf("%d (%.2f%%)", sum(ORIG$Apart_Choice_avoided_total, na.rm = TRUE), 100 * mean(ORIG$Apart_Choice_avoided_total, na.rm = TRUE)),
+  sprintf("%d (%.2f%%)", sum(ORIG$Phys_Choice_avoided_total, na.rm = TRUE), 100 * mean(ORIG$Phys_Choice_avoided_total, na.rm = TRUE)),
+  sprintf("%d (%.2f%%)", sum(ORIG$Insu_Choice_avoided_total, na.rm = TRUE), 100 * mean(ORIG$Insu_Choice_avoided_total, na.rm = TRUE)),
+  sprintf("%.2f (%.2f)", mean(ORIG$Peri_Cognition, na.rm = TRUE), sd(ORIG$Peri_Cognition, na.rm = TRUE)),
+  sprintf("%.2f (%.2f)", mean(ORIG$Peri_Affect_rev, na.rm = TRUE), sd(ORIG$Peri_Affect_rev, na.rm = TRUE)))
+orig_full_r <- c(
+  cor(ORIG$Age, ORIG$Choice_avoided_total, method = "spearman", use = "complete.obs"),
+  cor(ORIG$Age, ORIG$Car_Choice_avoided_total, use = "complete.obs"),
+  cor(ORIG$Age, ORIG$Apart_Choice_avoided_total, use = "complete.obs"),
+  cor(ORIG$Age, ORIG$Phys_Choice_avoided_total, use = "complete.obs"),
+  cor(ORIG$Age, ORIG$Insu_Choice_avoided_total, use = "complete.obs"),
+  cor(ORIG$Age, ORIG$Peri_Cognition, method = "spearman", use = "complete.obs"),
+  cor(ORIG$Age, ORIG$Peri_Affect_rev, method = "spearman", use = "complete.obs"))
+
+# ---- Original, control condition ----
+orig_ctrl_M <- c(
+  sprintf("%.2f (%.2f)", mean(orig_ctrl$Choice_avoided_total, na.rm = TRUE), sd(orig_ctrl$Choice_avoided_total, na.rm = TRUE)),
+  sprintf("%d (%.2f%%)", sum(orig_ctrl$Car_Choice_avoided_total, na.rm = TRUE), 100 * mean(orig_ctrl$Car_Choice_avoided_total, na.rm = TRUE)),
+  sprintf("%d (%.2f%%)", sum(orig_ctrl$Apart_Choice_avoided_total, na.rm = TRUE), 100 * mean(orig_ctrl$Apart_Choice_avoided_total, na.rm = TRUE)),
+  sprintf("%d (%.2f%%)", sum(orig_ctrl$Phys_Choice_avoided_total, na.rm = TRUE), 100 * mean(orig_ctrl$Phys_Choice_avoided_total, na.rm = TRUE)),
+  sprintf("%d (%.2f%%)", sum(orig_ctrl$Insu_Choice_avoided_total, na.rm = TRUE), 100 * mean(orig_ctrl$Insu_Choice_avoided_total, na.rm = TRUE)),
+  sprintf("%.2f (%.2f)", mean(orig_ctrl$Peri_Cognition, na.rm = TRUE), sd(orig_ctrl$Peri_Cognition, na.rm = TRUE)),
+  sprintf("%.2f (%.2f)", mean(orig_ctrl$Peri_Affect_rev, na.rm = TRUE), sd(orig_ctrl$Peri_Affect_rev, na.rm = TRUE)))
+orig_ctrl_r <- c(
+  cor(orig_ctrl$Age, orig_ctrl$Choice_avoided_total, method = "spearman", use = "complete.obs"),
+  cor(orig_ctrl$Age, orig_ctrl$Car_Choice_avoided_total, use = "complete.obs"),
+  cor(orig_ctrl$Age, orig_ctrl$Apart_Choice_avoided_total, use = "complete.obs"),
+  cor(orig_ctrl$Age, orig_ctrl$Phys_Choice_avoided_total, use = "complete.obs"),
+  cor(orig_ctrl$Age, orig_ctrl$Insu_Choice_avoided_total, use = "complete.obs"),
+  cor(orig_ctrl$Age, orig_ctrl$Peri_Cognition, method = "spearman", use = "complete.obs"),
+  cor(orig_ctrl$Age, orig_ctrl$Peri_Affect_rev, method = "spearman", use = "complete.obs"))
+
+# ---- Replication, full sample ----
+rep_full_M <- c(
+  sprintf("%.2f (%.2f)", mean(FIXED$Choice_avoided_total, na.rm = TRUE), sd(FIXED$Choice_avoided_total, na.rm = TRUE)),
+  sprintf("%d (%.2f%%)", sum(FIXED$Car_Choice_avoided_total, na.rm = TRUE), 100 * mean(FIXED$Car_Choice_avoided_total, na.rm = TRUE)),
+  sprintf("%d (%.2f%%)", sum(FIXED$Apart_Choice_avoided_total, na.rm = TRUE), 100 * mean(FIXED$Apart_Choice_avoided_total, na.rm = TRUE)),
+  sprintf("%d (%.2f%%)", sum(FIXED$Phys_Choice_avoided_total, na.rm = TRUE), 100 * mean(FIXED$Phys_Choice_avoided_total, na.rm = TRUE)),
+  sprintf("%d (%.2f%%)", sum(FIXED$Insu_Choice_avoided_total, na.rm = TRUE), 100 * mean(FIXED$Insu_Choice_avoided_total, na.rm = TRUE)),
+  sprintf("%.2f (%.2f)", mean(FIXED$Peri_Cognition, na.rm = TRUE), sd(FIXED$Peri_Cognition, na.rm = TRUE)),
+  sprintf("%.2f (%.2f)", mean(FIXED$Peri_Affect_rev, na.rm = TRUE), sd(FIXED$Peri_Affect_rev, na.rm = TRUE)))
+rep_full_r <- c(
+  cor(FIXED$Age, FIXED$Choice_avoided_total, method = "spearman", use = "complete.obs"),
+  cor(FIXED$Age, FIXED$Car_Choice_avoided_total, use = "complete.obs"),
+  cor(FIXED$Age, FIXED$Apart_Choice_avoided_total, use = "complete.obs"),
+  cor(FIXED$Age, FIXED$Phys_Choice_avoided_total, use = "complete.obs"),
+  cor(FIXED$Age, FIXED$Insu_Choice_avoided_total, use = "complete.obs"),
+  cor(FIXED$Age, FIXED$Peri_Cognition, method = "spearman", use = "complete.obs"),
+  cor(FIXED$Age, FIXED$Peri_Affect_rev, method = "spearman", use = "complete.obs"))
+
+# ---- Replication, control condition ----
+rep_ctrl_M <- c(
+  sprintf("%.2f (%.2f)", mean(rep_ctrl$Choice_avoided_total, na.rm = TRUE), sd(rep_ctrl$Choice_avoided_total, na.rm = TRUE)),
+  sprintf("%d (%.2f%%)", sum(rep_ctrl$Car_Choice_avoided_total, na.rm = TRUE), 100 * mean(rep_ctrl$Car_Choice_avoided_total, na.rm = TRUE)),
+  sprintf("%d (%.2f%%)", sum(rep_ctrl$Apart_Choice_avoided_total, na.rm = TRUE), 100 * mean(rep_ctrl$Apart_Choice_avoided_total, na.rm = TRUE)),
+  sprintf("%d (%.2f%%)", sum(rep_ctrl$Phys_Choice_avoided_total, na.rm = TRUE), 100 * mean(rep_ctrl$Phys_Choice_avoided_total, na.rm = TRUE)),
+  sprintf("%d (%.2f%%)", sum(rep_ctrl$Insu_Choice_avoided_total, na.rm = TRUE), 100 * mean(rep_ctrl$Insu_Choice_avoided_total, na.rm = TRUE)),
+  sprintf("%.2f (%.2f)", mean(rep_ctrl$Peri_Cognition, na.rm = TRUE), sd(rep_ctrl$Peri_Cognition, na.rm = TRUE)),
+  sprintf("%.2f (%.2f)", mean(rep_ctrl$Peri_Affect_rev, na.rm = TRUE), sd(rep_ctrl$Peri_Affect_rev, na.rm = TRUE)))
+rep_ctrl_r <- c(
+  cor(rep_ctrl$Age, rep_ctrl$Choice_avoided_total, method = "spearman", use = "complete.obs"),
+  cor(rep_ctrl$Age, rep_ctrl$Car_Choice_avoided_total, use = "complete.obs"),
+  cor(rep_ctrl$Age, rep_ctrl$Apart_Choice_avoided_total, use = "complete.obs"),
+  cor(rep_ctrl$Age, rep_ctrl$Phys_Choice_avoided_total, use = "complete.obs"),
+  cor(rep_ctrl$Age, rep_ctrl$Insu_Choice_avoided_total, use = "complete.obs"),
+  cor(rep_ctrl$Age, rep_ctrl$Peri_Cognition, method = "spearman", use = "complete.obs"),
+  cor(rep_ctrl$Age, rep_ctrl$Peri_Affect_rev, method = "spearman", use = "complete.obs"))
+
+# ---- APA style for correlations: two decimals, no leading zero, a dash if not computable ----
+# (a plain "-" would be read as a bullet point, so we use the long dash "—")
+orig_full_r <- sub("0.", ".", sprintf("%.2f", orig_full_r), fixed = TRUE)
+orig_ctrl_r <- sub("0.", ".", sprintf("%.2f", orig_ctrl_r), fixed = TRUE)
+rep_full_r  <- sub("0.", ".", sprintf("%.2f", rep_full_r),  fixed = TRUE)
+rep_ctrl_r  <- sub("0.", ".", sprintf("%.2f", rep_ctrl_r),  fixed = TRUE)
+rep_full_r[rep_full_r == "NA"] <- "—"
+rep_ctrl_r[rep_ctrl_r == "NA"] <- "—"
+
+# ---- Put the columns together ----
+table2 <- data.frame(
+  Variable = c("Decision avoidance (sum)",
+               "Decision avoided (car)",
+               "Decision avoided (apartment)",
+               "Decision avoided (physician)",
+               "Decision avoided (health plan)",
+               "Peri-decisional cognitive load",
+               "Peri-decisional affect"),
+  orig_full_M, orig_full_r, orig_ctrl_M, orig_ctrl_r,
+  rep_full_M,  rep_full_r,  rep_ctrl_M,  rep_ctrl_r)
+
+# ---- Column headers, with sample sizes ----
+sample_header <- c(1, 2, 2, 2, 2)
+names(sample_header) <- c(" ",
+                          paste0("Full sample (N = ", nrow(ORIG), ")"),
+                          paste0("Control (n = ", nrow(orig_ctrl), ")"),
+                          paste0("Full sample (N = ", nrow(FIXED), ")"),
+                          paste0("Control (n = ", nrow(rep_ctrl), ")"))
+study_header <- c(1, 4, 4)
+names(study_header) <- c(" ", "Original (Nolte & Löckenhoff, 2025)", replication_label)
+
+kbl(table2, row.names = FALSE, align = "lcccccccc",
+    col.names = c("Variable", "M (SD) / n (%)", "r", "M (SD) / n (%)", "r",
+                  "M (SD) / n (%)", "r", "M (SD) / n (%)", "r"),
+    caption = "Table 2 (recreated). Descriptive statistics and correlations with age, original vs. replication") %>%
+  kable_classic(full_width = FALSE, html_font = "Times New Roman") %>%
+  add_header_above(sample_header) %>%
+  add_header_above(study_header) %>%
+  pack_rows("Decision avoidance", 1, 5) %>%
+  pack_rows("Peri-decisional measures", 6, 7) %>%
+  footnote(general = "r = Spearman correlation with age; point-biserial correlation for the four yes/no avoidance rows. Significance stars omitted. A dash means the correlation cannot be computed yet (no variation in the pilot data).",
+           general_title = "Note.", footnote_as_chunk = TRUE)
+```
